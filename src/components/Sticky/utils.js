@@ -26,40 +26,82 @@ export function getInlineStyles({
     width: `${wrapperWidth}px`,
     gridArea: "default-area",
     overflow: "auto",
-    position: "relative",
-    zIndex: 0,
   };
 
   const placeholder = {
     width: containerWidth ? `${containerWidth}px` : null,
-    pointerEvents: "none",
   };
 
-  return {
-    wrapper,
-    container,
-    invisible,
-    scroller,
-    placeholder,
-    transform: {
-      ...container,
-      overflow: wrapperWidth ? null : "auto",
-      paddingBottom: scrollbarWidth ? `${scrollbarWidth}px` : null,
-      transform: scroll
-        ? `translate(-${scroll.left}px, -${scroll.top}px)`
-        : null,
-    },
+  const transform = {
+    ...container,
+    overflow: wrapperWidth ? null : "auto",
+    paddingBottom: scrollbarWidth ? `${scrollbarWidth}px` : null,
+    transform: scroll
+      ? `translate(-${scroll.left}px, -${scroll.top}px)`
+      : "translate(0, 0)",
   };
+
+  return { wrapper, container, invisible, scroller, placeholder, transform };
 }
 
-export function useScroll() {
+let lastMove = null;
+
+export function useScroll({ scroller }) {
   const [scroll, setScroll] = useState(null);
 
-  const handleScroll = useCallback(
-    ({ target }) =>
-      setScroll({ left: target.scrollLeft, top: target.scrollTop }),
-    []
+  const disableScroll = useCallback(
+    () => (document.body.style.overscrollBehaviorX = "none")
   );
 
-  return [scroll, handleScroll];
+  const enableScroll = useCallback(
+    () => (document.body.style.overscrollBehaviorX = "initial")
+  );
+
+  const handleWheel = useCallback(
+    (event) => {
+      console.log(event.nativeEvent.wheelDeltaX, event.nativeEvent.wheelDeltaY);
+
+      scroller.current.scrollLeft =
+        scroller.current.scrollLeft + -event.nativeEvent.wheelDeltaX;
+    },
+    [scroller]
+  );
+
+  const handleTouchMove = useCallback(
+    (event) => {
+      const x = event.touches[0].clientX;
+
+      if (lastMove)
+        scroller.current.scrollLeft =
+          scroller.current.scrollLeft + lastMove - x;
+
+      lastMove = x;
+    },
+    [scroller]
+  );
+
+  const clearTouchMove = useCallback(() => {
+    lastMove = null;
+  }, []);
+
+  const handleScroll = useCallback(
+    () =>
+      setScroll({
+        left: scroller.current.scrollLeft,
+        top: scroller.current.scrollTop,
+      }),
+    [scroller]
+  );
+
+  return [
+    scroll,
+    {
+      disableScroll,
+      enableScroll,
+      handleWheel,
+      handleTouchMove,
+      clearTouchMove,
+      handleScroll,
+    },
+  ];
 }

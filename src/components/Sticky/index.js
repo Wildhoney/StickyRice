@@ -1,23 +1,31 @@
+import { useCallback, useRef } from "react";
 import { useMeasure, useScrollbarWidth } from "react-use";
 import * as utils from "./utils";
 
 export default function Sticky({ children }) {
-  const [scroll, handleScroll] = utils.useScroll();
+  const scroller = useRef();
+  const [scroll, action] = utils.useScroll({ scroller });
   const [wrapper, { width: wrapperWidth }] = useMeasure();
   const [container, { width: containerWidth }] = useMeasure();
   const scrollbarWidth = useScrollbarWidth();
 
-  
   const inlineStyles = utils.getInlineStyles({
     scroll,
     wrapperWidth,
     containerWidth,
     scrollbarWidth,
   });
-  console.log(inlineStyles.transform)
 
   return (
-    <section ref={wrapper} style={inlineStyles.wrapper}>
+    <section
+      ref={wrapper}
+      style={inlineStyles.wrapper}
+      onPointerEnter={action.disableScroll}
+      onPointerLeave={action.enableScroll}
+      onWheel={action.handleWheel}
+      onTouchMove={action.handleTouchMove}
+      onTouchEnd={action.clearTouchMove}
+    >
       <div
         ref={container}
         style={{ ...inlineStyles.container, ...inlineStyles.transform }}
@@ -25,7 +33,11 @@ export default function Sticky({ children }) {
         {children}
       </div>
 
-      <div style={inlineStyles.scroller} onScroll={handleScroll}>
+      <div
+        ref={scroller}
+        style={inlineStyles.scroller}
+        onScroll={action.handleScroll}
+      >
         <div
           style={{
             ...inlineStyles.container,
@@ -33,7 +45,7 @@ export default function Sticky({ children }) {
             ...inlineStyles.placeholder,
           }}
         >
-          abc
+          &hellip;
         </div>
       </div>
     </section>
