@@ -14,13 +14,14 @@
     "react-use": "^15.3.4"
   },
   "devDependencies": {
-    "@emotion/core": "^10.0.35",
-    "@emotion/styled": "^10.0.27",
+    "@emotion/core": "^11.0.0",
+    "@emotion/react": "^11.1.2",
+    "@emotion/styled": "^11.0.0",
     "lorem-ipsum": "^2.0.3",
-    "nanoid": "^3.1.12",
-    "next": "^9.5.5",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
+    "nanoid": "^3.1.20",
+    "next": "^10.0.3",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
     "starwars": "^1.0.1"
   }
 }

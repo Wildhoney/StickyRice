@@ -1,53 +1,50 @@
-import { useCallback, useRef } from "react";
-import { useMeasure, useScrollbarWidth } from "react-use";
-import * as utils from "./utils";
+import React, { useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
+import { useGetSet, useMeasure } from "react-use";
 
-export default function Sticky({ children }) {
-  const scroller = useRef();
-  const [scroll, action] = utils.useScroll({ scroller });
-  const [wrapper, { width: wrapperWidth }] = useMeasure();
-  const [container, { width: containerWidth }] = useMeasure();
-  const scrollbarWidth = useScrollbarWidth();
+export default function Sticky({ children, ...props }) {
+  const inner = useRef();
+  const [get, set] = useGetSet(0);
+  const [outer, { width: outerWidth }] = useMeasure();
+  const [innerWidth, setInnerWidth] = useState(0);
 
-  const inlineStyles = utils.getInlineStyles({
-    scroll,
-    wrapperWidth,
-    containerWidth,
-    scrollbarWidth,
-  });
+  useEffect(() => {
+    const width = window
+      .getComputedStyle(inner.current.firstChild)
+      .getPropertyValue("width");
+
+    setInnerWidth(parseInt(width));
+  }, [outerWidth]);
 
   return (
-    <section
-      ref={wrapper}
-      style={inlineStyles.wrapper}
-      onPointerEnter={action.disableScroll}
-      onPointerLeave={action.enableScroll}
-      onWheel={action.handleWheel}
-      onTouchMove={action.handleTouchMove}
-      onTouchEnd={action.clearTouchMove}
+    <div
+      ref={outer}
+      {...props}
+      style={{ contain: "content", border: "2px solid red" }}
+      onWheel={(e) => {
+        document.body.style.overscrollBehavior = "none";
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+          const x = get() - e.deltaX;
+          const d = innerWidth - outerWidth;
+          console.log(Math.abs(x), d);
+          set(x > 0 ? 0 : Math.abs(x) >= d ? -d : x);
+        }
+      }}
+      onMouseEnter={() => (document.body.style.overscrollBehavior = "none")}
+      onMouseLeave={() => (document.body.style.overscrollBehavior = "auto")}
     >
       <div
-        ref={container}
-        style={{ ...inlineStyles.container, ...inlineStyles.transform }}
+        ref={inner}
+        style={{
+          transform: `translate(${get()}px, 0)`,
+        }}
       >
         {children}
       </div>
-
-      <div
-        ref={scroller}
-        style={inlineStyles.scroller}
-        onScroll={action.handleScroll}
-      >
-        <div
-          style={{
-            ...inlineStyles.container,
-            ...inlineStyles.invisible,
-            ...inlineStyles.placeholder,
-          }}
-        >
-          &hellip;
-        </div>
-      </div>
-    </section>
+    </div>
   );
 }
+
+Sticky.propTypes = { children: PropTypes.node };
+
+Sticky.defaultProps = { children: null };
