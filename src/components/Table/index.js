@@ -18,7 +18,7 @@ export default function Table() {
       </thead>
 
       <tbody>
-        {new Array(1).fill(null).map((_, index) => (
+        {new Array(3).fill(null).map((_, index) => (
           <tr key={`row_${index}`}>
             <e.TD>
               <img

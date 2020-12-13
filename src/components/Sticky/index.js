@@ -1,30 +1,30 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { useGetSet, useMeasure, useScrollbarWidth } from "react-use";
+import { useMeasure, useScrollbarWidth } from "react-use";
 
 export default function Sticky({ children, ...props }) {
   const scroller = useRef();
-  const [get, set] = useGetSet(0);
   const scrollBarSize = 15 ?? useScrollbarWidth();
+  const [scrollPosition, setScrollPosition] = useState({ left: 0, top: 0 });
   const [outer, { width: outerWidth }] = useMeasure();
   const [inner, { width: innerWidth }] = useMeasure();
+  const isClient = true;
+  // const isClient = scrollBarSize > 0;
 
   const handleWheel = useCallback(
     ({ deltaX, deltaY }) => {
       document.body.style.overscrollBehavior = "none";
 
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        const x = get() - deltaX;
-        const d = innerWidth - outerWidth;
-        const scrollPosition = x > 0 ? 0 : Math.abs(x) >= d ? -d : x;
-        scroller.current.scrollLeft = Math.abs(scrollPosition);
-        set(scrollPosition);
-      }
+      if (scroller.current && Math.abs(deltaX) > Math.abs(deltaY))
+        scroller.current.scrollLeft += deltaX;
     },
     [innerWidth, outerWidth]
   );
 
-  const handleScroll = useCallback(() => set(-scroller.current.scrollLeft), []);
+  const handleScroll = useCallback(
+    () => setScrollPosition({ left: -scroller.current.scrollLeft, top: 0 }),
+    []
+  );
 
   const handleMouseEnter = useCallback(
     () => (document.body.style.overscrollBehavior = "none"),
@@ -40,36 +40,47 @@ export default function Sticky({ children, ...props }) {
     <div
       ref={outer}
       {...props}
-      style={{ contain: "content" }}
+      style={
+        isClient
+          ? { contain: "content" }
+          : { overflowX: "auto", overflowY: "hidden" }
+      }
       onWheel={handleWheel}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div
         ref={inner}
-        style={{
-          transform: `translate(${get()}px, 0)`,
-          width: "max-content",
-        }}
+        style={
+          isClient
+            ? {
+                transform: `translate(${scrollPosition.left}px, 0)`,
+                width: "max-content",
+              }
+            : {}
+        }
       >
         {children}
 
-        <div
-          ref={scroller}
-          style={{
-            overflowX: "scroll",
-            overflowY: "hidden",
-            height: `${scrollBarSize}px`,
-            width: `${outerWidth}px`,
-            marginTop: `-${scrollBarSize}px`,
-            transform: `translate(${Math.abs(get())}px, 0)`,
-          }}
-          onScroll={handleScroll}
-        >
+        {isClient && innerWidth > outerWidth && (
           <div
-            style={{ width: `${innerWidth}px`, border: "1px solid white" }}
-          />
-        </div>
+            ref={scroller}
+            style={{
+              overflowX: "scroll",
+              overflowY: "hidden",
+              // position: "sticky",
+              // bottom: 0,
+              height: `${scrollBarSize}px`,
+              width: `${outerWidth}px`,
+              transform: `translate(${Math.abs(scrollPosition.left)}px, 0)`,
+            }}
+            onScroll={handleScroll}
+          >
+            <div
+              style={{ width: `${innerWidth}px`, border: "1px solid white" }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
